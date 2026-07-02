@@ -1,0 +1,35 @@
+ernestdefoe-typesense:
+  admin:
+    intro: >
+      Point Flarum at a Typesense server for fast, typo-tolerant discussion search.
+      Enter your server details, save, then rebuild the index. Your API key is stored
+      on the server and is never exposed to visitors.
+
+    host_label: Host
+    port_label: Port
+    protocol_label: Protocol
+    api_key_label: API key
+    collection_prefix_label: Collection prefix
+    prefix_help: >
+      Optional. Keeps collections separate when several forums share one Typesense
+      server. Leave blank to derive one from your forum URL automatically.
+
+    use_for_discussions: Use Typesense for discussion search
+    use_for_discussions_help: >
+      When on, text searches for discussions are served by Typesense. Filtering and
+      browsing without a search term continue to use the database, and permissions are
+      always enforced by Flarum — Typesense only ranks results.
+
+    connection_label: Connection
+    test_button: Test connection
+    test_ok: Connected
+    test_fail: Could not reach Typesense
+
+    rebuild_label: Search index
+    rebuild_help: >
+      Build or refresh the Typesense index from your existing discussions. Run this once
+      after entering your server details, and any time you suspect the index has drifted.
+      On large forums, configure a real queue worker so this runs in the background.
+    rebuild_button: Rebuild index
+    rebuild_queued: Reindex queued. It will run in the background via your queue worker.
+    rebuild_failed: Could not start the reindex. Check your connection settings.

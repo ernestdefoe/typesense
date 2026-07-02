@@ -1,0 +1,45 @@
+{
+    "name": "ernestdefoe/typesense",
+    "description": "Fast, typo-tolerant Typesense search for Flarum 2 — a free, drop-in search driver.",
+    "keywords": ["flarum", "search", "typesense", "fulltext"],
+    "type": "flarum-extension",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Ernest Defoe",
+            "email": "ernestdefoe@gmail.com"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/ernestdefoe/typesense/issues",
+        "source": "https://github.com/ernestdefoe/typesense"
+    },
+    "require": {
+        "php": "^8.2",
+        "flarum/core": "^2.0",
+        "typesense/typesense-php": "^4.9",
+        "symfony/http-client": "^6.0 || ^7.0",
+        "nyholm/psr7": "^1.8"
+    },
+    "autoload": {
+        "psr-4": {
+            "Ernestdefoe\\Typesense\\": "src/"
+        }
+    },
+    "extra": {
+        "flarum-extension": {
+            "title": "Typesense Search",
+            "category": "feature",
+            "icon": {
+                "name": "fas fa-bolt-lightning",
+                "backgroundColor": "#e63e83",
+                "color": "#fff"
+            }
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
