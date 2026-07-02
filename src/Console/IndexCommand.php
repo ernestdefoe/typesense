@@ -3,15 +3,20 @@
 namespace Ernestdefoe\Typesense\Console;
 
 use Ernestdefoe\Typesense\Search\Discussion\DiscussionIndexer;
+use Ernestdefoe\Typesense\Search\Post\PostIndexer;
+use Ernestdefoe\Typesense\Search\User\UserIndexer;
 use Ernestdefoe\Typesense\TypesenseConnection;
 use Flarum\Console\AbstractCommand;
+use Flarum\Search\IndexerInterface;
 use Symfony\Component\Console\Input\InputOption;
 
 class IndexCommand extends AbstractCommand
 {
     public function __construct(
         protected TypesenseConnection $typesense,
-        protected DiscussionIndexer $indexer
+        protected DiscussionIndexer $discussions,
+        protected UserIndexer $users,
+        protected PostIndexer $posts
     ) {
         parent::__construct();
     }
@@ -20,8 +25,8 @@ class IndexCommand extends AbstractCommand
     {
         $this
             ->setName('typesense:index')
-            ->setDescription('Rebuild (or flush) the Typesense search index.')
-            ->addOption('flush', null, InputOption::VALUE_NONE, 'Delete the index instead of rebuilding it.');
+            ->setDescription('Rebuild (or flush) the Typesense search indexes: discussions, users and posts.')
+            ->addOption('flush', null, InputOption::VALUE_NONE, 'Delete the indexes instead of rebuilding them.');
     }
 
     protected function fire(): int
@@ -32,17 +37,26 @@ class IndexCommand extends AbstractCommand
             return 1;
         }
 
-        if ($this->input->getOption('flush')) {
-            $this->info('Flushing the Typesense index…');
-            $this->indexer->flush();
-            $this->info('Done.');
+        /** @var array<string, IndexerInterface> $indexers */
+        $indexers = [
+            'discussions' => $this->discussions,
+            'users' => $this->users,
+            'posts' => $this->posts,
+        ];
 
-            return 0;
+        $flush = (bool) $this->input->getOption('flush');
+
+        foreach ($indexers as $name => $indexer) {
+            if ($flush) {
+                $this->info("Flushing $name…");
+                $indexer->flush();
+            } else {
+                $this->info("Rebuilding $name — this can take a while on large forums…");
+                $indexer->build();
+            }
         }
 
-        $this->info('Rebuilding the Typesense index — this can take a while on large forums…');
-        $this->indexer->build();
-        $this->info('Done. Set Discussions to use the Typesense driver under Admin → Typesense Search if you haven\'t already.');
+        $this->info('Done.' . ($flush ? '' : ' Enable the Typesense driver per resource under Admin → Typesense Search.'));
 
         return 0;
     }

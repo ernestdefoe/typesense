@@ -1,6 +1,6 @@
 <?php
 
-namespace Ernestdefoe\Typesense\Search\Discussion;
+namespace Ernestdefoe\Typesense\Search\Post;
 
 use Ernestdefoe\Typesense\Search\AbstractTypesenseFulltextFilter;
 
@@ -8,21 +8,16 @@ class FulltextFilter extends AbstractTypesenseFulltextFilter
 {
     protected function index(): string
     {
-        return 'discussions';
+        return 'posts';
     }
 
     protected function queryBy(): string
     {
-        return 'title,content';
-    }
-
-    protected function queryByWeights(): ?string
-    {
-        return '3,1';
+        return 'content';
     }
 
     protected function idColumn(): string
     {
-        return 'discussions.id';
+        return 'posts.id';
     }
 }

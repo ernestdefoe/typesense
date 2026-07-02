@@ -8,12 +8,13 @@ use Flarum\Post\Post;
 use Flarum\Search\IndexerInterface;
 
 /**
- * Posts aren't searched directly, but their text is part of the parent
- * discussion's document — so any post create/edit/delete re-indexes the
- * discussion(s) it belongs to. build()/flush() are owned by DiscussionIndexer;
- * here they're deliberate no-ops so a full rebuild isn't run twice.
+ * A post's text is part of its parent discussion's document, so any post
+ * create/edit/delete re-indexes the discussion(s) it belongs to. This is the
+ * discussion-search half of post indexing (Search\Post\PostIndexer handles the
+ * separate `posts` collection). build()/flush() are no-ops — the discussions
+ * collection is owned by DiscussionIndexer.
  */
-class PostIndexer implements IndexerInterface
+class PostReindexer implements IndexerInterface
 {
     public function __construct(
         protected TypesenseConnection $typesense,

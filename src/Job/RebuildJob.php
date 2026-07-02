@@ -3,14 +3,16 @@
 namespace Ernestdefoe\Typesense\Job;
 
 use Ernestdefoe\Typesense\Search\Discussion\DiscussionIndexer;
+use Ernestdefoe\Typesense\Search\Post\PostIndexer;
+use Ernestdefoe\Typesense\Search\User\UserIndexer;
 use Flarum\Queue\AbstractJob;
 use Illuminate\Contracts\Container\Container;
 
 /**
- * Full reindex, run off the request thread (§50). Dispatched by the admin
- * "Rebuild index" button. On the default `sync` queue this still runs inline —
- * document in the README that a real queue worker is recommended so a rebuild
- * of a large forum doesn't tie up a web request.
+ * Full reindex of every collection (discussions, users, posts), run off the
+ * request thread (§50). Dispatched by the admin "Rebuild index" button. On the
+ * default `sync` queue this still runs inline — the README recommends a real
+ * queue worker so a rebuild of a large forum doesn't tie up a web request.
  */
 class RebuildJob extends AbstractJob
 {
@@ -19,6 +21,8 @@ class RebuildJob extends AbstractJob
 
     public function handle(Container $container): void
     {
-        $container->make(DiscussionIndexer::class)->build();
+        foreach ([DiscussionIndexer::class, UserIndexer::class, PostIndexer::class] as $indexer) {
+            $container->make($indexer)->build();
+        }
     }
 }

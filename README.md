@@ -3,11 +3,13 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE.md)
 
 A free, drop-in [Typesense](https://typesense.org) search driver for **Flarum 2** —
-fast, typo-tolerant full-text discussion search that anyone can set up in a few minutes.
+fast, typo-tolerant full-text search across **discussions, users and posts** that anyone
+can set up in a few minutes.
 
 Flarum 2 shipped a pluggable search architecture; this extension implements a Typesense
 driver for it. Text searches are answered by Typesense; everything else (filtering,
-browsing, permissions) stays exactly as Flarum does it.
+browsing, permissions) stays exactly as Flarum does it. You choose per resource which
+searches Typesense answers.
 
 ## Why it's safe by design
 
@@ -66,11 +68,18 @@ php flarum typesense:index --flush  # delete the index
 Several forums can share one Typesense server safely — collections are namespaced by a
 prefix (set one, or it's derived from your forum URL).
 
-## Scope
+## What's indexed
 
-v1 accelerates **discussion** full-text search — the primary forum search. User and
-post-scoped search continue to use Flarum's database driver. The design is per-model, so
-those can be added without disruption in a later release.
+Everything Flarum can full-text search, each in its own namespaced collection:
+
+- **Discussions** — title + the concatenated text of visible comment posts.
+- **Users** — username and display name.
+- **Posts** — individual comment post text (post-scoped search).
+
+Each is toggled independently in the admin, so you can send discussion search to
+Typesense while leaving users or posts on the database, or run all three through it.
+(Groups and access tokens have no full-text search in Flarum, so they always stay on the
+database driver.)
 
 ## License
 

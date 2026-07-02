@@ -8,7 +8,11 @@ declare const m: import('mithril').Static;
 const K = 'ernestdefoe-typesense';
 // Core stores the per-model search driver under `search_driver_<ModelClass>`;
 // the backslashes are literal in the stored key.
-const DRIVER_KEY = 'search_driver_Flarum\\Discussion\\Discussion';
+const DRIVERS: { key: string; label: string }[] = [
+  { key: 'search_driver_Flarum\\Discussion\\Discussion', label: 'use_for_discussions' },
+  { key: 'search_driver_Flarum\\User\\User', label: 'use_for_users' },
+  { key: 'search_driver_Flarum\\Post\\Post', label: 'use_for_posts' },
+];
 const t = (k: string) => app.translator.trans(`${K}.admin.${k}`);
 
 interface Attrs {
@@ -24,8 +28,6 @@ export default class TypesenseControls extends Component<Attrs> {
   view() {
     const setting = this.attrs.setting;
     const apiKey = setting(`${K}.api_key`, '');
-    const driver = setting(DRIVER_KEY, 'database');
-    const useTypesense = driver() === 'typesense';
 
     return m('div', [
       m('.Form-group', [
@@ -38,16 +40,26 @@ export default class TypesenseControls extends Component<Attrs> {
         }),
       ]),
 
+      m('hr'),
+
       m('.Form-group', [
-        m(
-          Switch,
-          {
-            state: useTypesense,
-            onchange: (v: boolean) => driver(v ? 'typesense' : 'database'),
-          },
-          t('use_for_discussions')
-        ),
-        m('.helpText', t('use_for_discussions_help')),
+        m('label', t('drivers_label')),
+        m('.helpText', t('drivers_help')),
+        ...DRIVERS.map(({ key, label }) => {
+          const driver = setting(key, 'database');
+          return m(
+            'div',
+            { style: 'margin: 6px 0' },
+            m(
+              Switch,
+              {
+                state: driver() === 'typesense',
+                onchange: (v: boolean) => driver(v ? 'typesense' : 'database'),
+              },
+              t(label)
+            )
+          );
+        }),
       ]),
 
       m('hr'),
