@@ -1,6 +1,8 @@
 import app from 'flarum/admin/app';
-import TypesensePage from './components/TypesensePage';
 
-app.initializers.add('ernestdefoe-typesense', () => {
-  app.extensionData.for('ernestdefoe-typesense').registerPage(TypesensePage);
-});
+// Settings are declared via the JS Admin extender in ./extend — the Flarum 2
+// pattern that replaced the removed 1.x `app.extensionData` API (using that API
+// throws "failed to initialize").
+app.initializers.add('ernestdefoe-typesense', () => {});
+
+export { default as extend } from './extend';
