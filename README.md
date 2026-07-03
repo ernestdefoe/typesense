@@ -49,6 +49,10 @@ docker run -d --name typesense -p 8108:8108 \
 
 That's it — searches for discussions are now served by Typesense.
 
+Search tabs that Typesense answers show a small **Powered by Typesense** badge in the
+search modal, so you can see at a glance which searches are using the driver. Only that
+on/off fact is sent to the browser — connection details and the API key stay on the server.
+
 ### Console
 
 ```bash

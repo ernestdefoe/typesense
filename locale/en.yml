@@ -1,4 +1,7 @@
 ernestdefoe-typesense:
+  forum:
+    powered_by: Powered by Typesense
+
   admin:
     intro: >
       Point Flarum at a Typesense server for fast, typo-tolerant search across

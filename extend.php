@@ -15,14 +15,44 @@ use Ernestdefoe\Typesense\Search\TypesenseSearchDriver;
 use Ernestdefoe\Typesense\Search\User\FulltextFilter as UserFulltextFilter;
 use Ernestdefoe\Typesense\Search\User\TypesenseUserSearcher;
 use Ernestdefoe\Typesense\Search\User\UserIndexer;
+use Flarum\Api\Resource\ForumResource;
+use Flarum\Api\Schema\Attribute;
 use Flarum\Discussion\Discussion;
 use Flarum\Extend;
 use Flarum\Post\Post;
+use Flarum\Settings\SettingsRepositoryInterface;
 use Flarum\User\User;
 
 return [
     (new Extend\Frontend('admin'))
         ->js(__DIR__ . '/js/dist/admin.js'),
+
+    (new Extend\Frontend('forum'))
+        ->js(__DIR__ . '/js/dist/forum.js')
+        ->css(__DIR__ . '/less/forum.less'),
+
+    /*
+     * Tells the frontend which search tabs are answered by Typesense so the
+     * search modal can show a "Powered by Typesense" badge. Booleans only —
+     * the connection details and API key never leave the server.
+     */
+    (new Extend\ApiResource(ForumResource::class))
+        ->fields(fn () => [
+            Attribute::make('typesenseSearch')->get(function () {
+                $settings = resolve(SettingsRepositoryInterface::class);
+
+                $resources = [
+                    'discussions' => Discussion::class,
+                    'users' => User::class,
+                    'posts' => Post::class,
+                ];
+
+                return array_keys(array_filter(
+                    $resources,
+                    fn (string $model) => $settings->get("search_driver_$model") === TypesenseSearchDriver::name()
+                ));
+            }),
+        ]),
 
     new Extend\Locales(__DIR__ . '/locale'),
 
