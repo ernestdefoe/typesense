@@ -4,6 +4,7 @@ namespace Ernestdefoe\Typesense\Search;
 
 use Ernestdefoe\Typesense\TypesenseConnection;
 use Flarum\Search\IndexerInterface;
+use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Database\Eloquent\Builder;
 use Psr\Log\LoggerInterface;
 
@@ -18,9 +19,15 @@ abstract class AbstractIndexer implements IndexerInterface
 {
     protected const BUILD_CHUNK = 500;
 
+    /**
+     * How long a confirmed collection is trusted before it is checked again.
+     */
+    protected const EXISTS_TTL = 600;
+
     public function __construct(
         protected TypesenseConnection $typesense,
-        protected LoggerInterface $log
+        protected LoggerInterface $log,
+        protected Cache $cache
     ) {
     }
 
@@ -91,6 +98,8 @@ abstract class AbstractIndexer implements IndexerInterface
             return;
         }
 
+        $this->cache->forget($this->existsKey());
+
         try {
             $this->collection()->delete();
         } catch (\Throwable $e) {
@@ -110,6 +119,9 @@ abstract class AbstractIndexer implements IndexerInterface
         try {
             $this->collection()->documents->import($docs, ['action' => 'upsert']);
         } catch (\Throwable $e) {
+            // The collection may have gone since it was last confirmed; check
+            // again on the next save rather than trusting the cache.
+            $this->cache->forget($this->existsKey());
             $this->log->warning('[typesense] ' . static::index() . ' upsert failed: ' . $e->getMessage());
         }
     }
@@ -119,13 +131,30 @@ abstract class AbstractIndexer implements IndexerInterface
         return $this->typesense->client()->collections[$this->typesense->collectionName(static::index())];
     }
 
+    /**
+     * 🚨 Remembered in the cache, not asked on every save. Every post, reply,
+     * edit and profile change is indexed, and on a host with the sync queue
+     * that runs inside the visitor's request — so a retrieve per save doubled
+     * the round trips to Typesense on every write, for an answer that almost
+     * never changes. flush() forgets it, so a rebuild still re-creates.
+     */
     protected function ensureCollection(): void
     {
+        if ($this->cache->get($this->existsKey())) {
+            return;
+        }
+
         try {
             $this->collection()->retrieve();
+            $this->cache->put($this->existsKey(), true, self::EXISTS_TTL);
         } catch (\Throwable $e) {
             $this->createCollection();
         }
+    }
+
+    protected function existsKey(): string
+    {
+        return 'ernestdefoe-typesense.exists.'.$this->typesense->collectionName(static::index());
     }
 
     protected function createCollection(): void
