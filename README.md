@@ -85,6 +85,10 @@ Typesense while leaving users or posts on the database, or run all three through
 (Groups and access tokens have no full-text search in Flarum, so they always stay on the
 database driver.)
 
+## Discuss
+
+Questions, ideas and release notes: [Typesense Search Driver on discuss.flarum.org](https://discuss.flarum.org/d/39510-typesense-search-driver).
+
 ## License
 
 [MIT](./LICENSE.md) © Ernest Defoe
