@@ -19,6 +19,7 @@ use Flarum\Api\Resource\ForumResource;
 use Flarum\Api\Schema\Attribute;
 use Flarum\Discussion\Discussion;
 use Flarum\Extend;
+use Flarum\Post\CommentPost;
 use Flarum\Post\Post;
 use Flarum\Settings\SettingsRepositoryInterface;
 use Flarum\User\User;
@@ -64,10 +65,19 @@ return [
         ->addSearcher(Post::class, TypesensePostSearcher::class)
         ->setFulltext(TypesensePostSearcher::class, PostFulltextFilter::class),
 
+    /*
+     * 🚨 CommentPost as well as Post: core observes the exact class it is
+     * given, and a reply is saved as a CommentPost, whose model events (and
+     * its `hidden` event, declared only on CommentPost) a Post observer never
+     * hears. Registered under Post alone, no new reply, edit, hide or delete
+     * ever reached the index until the next full rebuild.
+     */
     (new Extend\SearchIndex())
         ->indexer(Discussion::class, DiscussionIndexer::class)
         ->indexer(Post::class, PostReindexer::class)
         ->indexer(Post::class, PostIndexer::class)
+        ->indexer(CommentPost::class, PostReindexer::class)
+        ->indexer(CommentPost::class, PostIndexer::class)
         ->indexer(User::class, UserIndexer::class),
 
     new Extend\ServiceProvider(SearchProvider::class),
