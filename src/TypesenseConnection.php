@@ -2,6 +2,7 @@
 
 namespace Ernestdefoe\Typesense;
 
+use Flarum\Foundation\Config;
 use Flarum\Settings\SettingsRepositoryInterface;
 use Symfony\Component\HttpClient\HttplugClient;
 use Typesense\Client;
@@ -20,7 +21,8 @@ class TypesenseConnection
     private ?Client $client = null;
 
     public function __construct(
-        protected SettingsRepositoryInterface $settings
+        protected SettingsRepositoryInterface $settings,
+        protected Config $config
     ) {
     }
 
@@ -47,17 +49,22 @@ class TypesenseConnection
 
     /**
      * Collection prefix keeps installs isolated when several forums share one
-     * Typesense instance. Falls back to a slug of the forum URL host so two
+     * Typesense instance. Falls back to a slug of the forum's host so two
      * forums never clobber each other's index out of the box.
+     *
+     * 🚨 The host comes from config.php: Flarum 2 has no `forum_url` setting,
+     * and reading one gave every forum the same "flarum_" prefix. Installs
+     * that were already indexed under it keep it — a migration stores
+     * "flarum" as their prefix, so their collections are not orphaned.
      */
     public function prefix(): string
     {
         $prefix = trim((string) $this->settings->get('ernestdefoe-typesense.collection_prefix', ''));
-        if ($prefix !== '') {
-            return preg_replace('/[^A-Za-z0-9_]/', '_', $prefix) . '_';
+        if ($prefix === '') {
+            $prefix = $this->config->url()->getHost() ?: 'flarum';
         }
-        $host = parse_url((string) $this->settings->get('forum_url', ''), PHP_URL_HOST) ?: 'flarum';
-        return preg_replace('/[^A-Za-z0-9_]/', '_', $host) . '_';
+
+        return preg_replace('/[^A-Za-z0-9_]/', '_', $prefix) . '_';
     }
 
     public function collectionName(string $index): string
