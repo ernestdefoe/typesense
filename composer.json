@@ -11,6 +11,7 @@
         }
     ],
     "support": {
+        "forum": "https://discuss.flarum.org/d/39510-typesense-search-driver",
         "issues": "https://github.com/ernestdefoe/typesense/issues",
         "source": "https://github.com/ernestdefoe/typesense"
     },
