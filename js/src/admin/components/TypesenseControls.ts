@@ -72,8 +72,8 @@ export default class TypesenseControls extends Component<Attrs> {
           this.testStatus === 'ok'
             ? m('span', { style: 'color: var(--success-color, green)' }, ['✓ ', t('test_ok')])
             : this.testStatus === 'fail'
-            ? m('span', { style: 'color: var(--error-color, #d83e3e)' }, ['✗ ', t('test_fail'), this.testError ? ` (${this.testError})` : ''])
-            : null,
+              ? m('span', { style: 'color: var(--error-color, #d83e3e)' }, ['✗ ', t('test_fail'), this.testError ? ` (${this.testError})` : ''])
+              : null,
         ]),
       ]),
 

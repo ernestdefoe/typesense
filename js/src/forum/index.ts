@@ -16,30 +16,21 @@ app.initializers.add(K, () => {
   // it by module path — core applies the extension via flarum.reg.onLoad once
   // the chunk arrives. Extending the prototype directly would run before the
   // module exists and silently do nothing.
-  extend(
-    'flarum/common/components/SearchModal',
-    'activeTabItems',
-    function (this: any, items: ItemList<Mithril.Children>) {
-      const typesenseResources = (app.forum.attribute<string[]>('typesenseSearch') ||
-        []) as string[];
-      const source = this.activeSource?.();
+  extend('flarum/common/components/SearchModal', 'activeTabItems', function (this: any, items: ItemList<Mithril.Children>) {
+    const typesenseResources = (app.forum.attribute<string[]>('typesenseSearch') || []) as string[];
+    const source = this.activeSource?.();
 
-      if (!source || !typesenseResources.includes(source.resource)) return;
+    if (!source || !typesenseResources.includes(source.resource)) return;
 
-      items.add(
-        'typesense',
-        m('div', { className: 'SearchModal-section TypesenseBadge-section' }, [
-          m('span', { className: 'TypesenseBadge' }, [
-            m(
-              'span',
-              { className: 'TypesenseBadge-icon', 'aria-hidden': 'true' },
-              m('i', { className: 'fas fa-bolt-lightning' })
-            ),
-            app.translator.trans(`${K}.forum.powered_by`),
-          ]),
+    items.add(
+      'typesense',
+      m('div', { className: 'SearchModal-section TypesenseBadge-section' }, [
+        m('span', { className: 'TypesenseBadge' }, [
+          m('span', { className: 'TypesenseBadge-icon', 'aria-hidden': 'true' }, m('i', { className: 'fas fa-bolt-lightning' })),
+          app.translator.trans(`${K}.forum.powered_by`),
         ]),
-        0
-      );
-    }
-  );
+      ]),
+      0
+    );
+  });
 });
