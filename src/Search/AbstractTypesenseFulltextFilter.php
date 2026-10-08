@@ -56,11 +56,11 @@ abstract class AbstractTypesenseFulltextFilter extends AbstractFulltextFilter
         // prefix, and a bare `discussions.id` broke every prefixed forum.
         $column = $this->idColumn();
         $state->setDefaultSort(function ($q) use ($column, $ids) {
-            $sql = 'CASE ' . $q->getQuery()->getGrammar()->wrap($column);
+            $sql = 'CASE '.$q->getQuery()->getGrammar()->wrap($column);
             foreach (array_keys($ids) as $position) {
-                $sql .= ' WHEN ? THEN ' . (int) $position;
+                $sql .= ' WHEN ? THEN '.(int) $position;
             }
-            $q->orderByRaw($sql . ' END', $ids);
+            $q->orderByRaw($sql.' END', $ids);
         });
     }
 
@@ -95,7 +95,7 @@ abstract class AbstractTypesenseFulltextFilter extends AbstractFulltextFilter
                 $response['hits'] ?? []
             )));
         } catch (\Throwable $e) {
-            $this->log->error('[typesense] ' . $this->index() . ' search failed: ' . $e->getMessage());
+            $this->log->error('[typesense] '.$this->index().' search failed: '.$e->getMessage());
 
             return [];
         }

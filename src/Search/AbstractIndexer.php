@@ -69,10 +69,10 @@ abstract class AbstractIndexer implements IndexerInterface
 
         try {
             $this->collection()->documents->delete([
-                'filter_by' => 'id:[' . implode(',', $ids) . ']',
+                'filter_by' => 'id:['.implode(',', $ids).']',
             ]);
         } catch (\Throwable $e) {
-            $this->log->warning('[typesense] ' . static::index() . ' delete failed: ' . $e->getMessage());
+            $this->log->warning('[typesense] '.static::index().' delete failed: '.$e->getMessage());
         }
     }
 
@@ -122,7 +122,7 @@ abstract class AbstractIndexer implements IndexerInterface
             // The collection may have gone since it was last confirmed; check
             // again on the next save rather than trusting the cache.
             $this->cache->forget($this->existsKey());
-            $this->log->warning('[typesense] ' . static::index() . ' upsert failed: ' . $e->getMessage());
+            $this->log->warning('[typesense] '.static::index().' upsert failed: '.$e->getMessage());
         }
     }
 

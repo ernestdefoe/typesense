@@ -26,11 +26,11 @@ use Flarum\User\User;
 
 return [
     (new Extend\Frontend('admin'))
-        ->js(__DIR__ . '/js/dist/admin.js'),
+        ->js(__DIR__.'/js/dist/admin.js'),
 
     (new Extend\Frontend('forum'))
-        ->js(__DIR__ . '/js/dist/forum.js')
-        ->css(__DIR__ . '/less/forum.less'),
+        ->js(__DIR__.'/js/dist/forum.js')
+        ->css(__DIR__.'/less/forum.less'),
 
     /*
      * Tells the frontend which search tabs are answered by Typesense so the
@@ -55,7 +55,7 @@ return [
             }),
         ]),
 
-    new Extend\Locales(__DIR__ . '/locale'),
+    new Extend\Locales(__DIR__.'/locale'),
 
     (new Extend\SearchDriver(TypesenseSearchDriver::class))
         ->addSearcher(Discussion::class, TypesenseDiscussionSearcher::class)

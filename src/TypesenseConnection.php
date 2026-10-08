@@ -39,6 +39,7 @@ class TypesenseConnection
     public function protocol(): string
     {
         $p = trim((string) $this->settings->get('ernestdefoe-typesense.protocol', 'http'));
+
         return $p === 'https' ? 'https' : 'http';
     }
 
@@ -64,12 +65,12 @@ class TypesenseConnection
             $prefix = $this->config->url()->getHost() ?: 'flarum';
         }
 
-        return preg_replace('/[^A-Za-z0-9_]/', '_', $prefix) . '_';
+        return preg_replace('/[^A-Za-z0-9_]/', '_', $prefix).'_';
     }
 
     public function collectionName(string $index): string
     {
-        return $this->prefix() . $index;
+        return $this->prefix().$index;
     }
 
     public function configured(): bool

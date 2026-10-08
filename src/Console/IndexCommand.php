@@ -56,7 +56,7 @@ class IndexCommand extends AbstractCommand
             }
         }
 
-        $this->info('Done.' . ($flush ? '' : ' Enable the Typesense driver per resource under Admin → Typesense Search.'));
+        $this->info('Done.'.($flush ? '' : ' Enable the Typesense driver per resource under Admin → Typesense Search.'));
 
         return 0;
     }

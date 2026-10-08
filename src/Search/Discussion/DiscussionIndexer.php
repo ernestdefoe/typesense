@@ -104,7 +104,7 @@ class DiscussionIndexer extends AbstractIndexer
                         $full[$did] = true;
                         continue;
                     }
-                    $map[$did] = $current . ' ' . strip_tags((string) $p->content);
+                    $map[$did] = $current.' '.strip_tags((string) $p->content);
                     if (mb_strlen($map[$did]) >= self::MAX_CONTENT) {
                         $full[$did] = true;
                     }
