@@ -62,7 +62,7 @@ abstract class AbstractIndexer implements IndexerInterface
             return;
         }
 
-        $ids = array_values(array_filter(array_map(fn ($m) => (int) $m->id, $models)));
+        $ids = array_values(array_filter(array_map(fn ($m) => (int) $m->getKey(), $models)));
         if (empty($ids)) {
             return;
         }
@@ -126,7 +126,7 @@ abstract class AbstractIndexer implements IndexerInterface
         }
     }
 
-    protected function collection()
+    protected function collection(): \Typesense\Collection
     {
         return $this->typesense->client()->collections[$this->typesense->collectionName(static::index())];
     }
