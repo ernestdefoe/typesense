@@ -7,6 +7,7 @@ use Flarum\Search\IndexerInterface;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Database\Eloquent\Builder;
 use Psr\Log\LoggerInterface;
+use Typesense\Exceptions\ObjectNotFound;
 
 /**
  * Shared Typesense collection plumbing for the concrete resource indexers.
@@ -52,8 +53,18 @@ abstract class AbstractIndexer implements IndexerInterface
             return;
         }
 
-        $this->ensureCollection();
-        $this->import($this->documentsFor($models));
+        // 🚨 One failed call ends the attempt: on a server that is down, the
+        // collection check, a create and the import each waited out the
+        // timeout in turn, and each logged a warning on every save.
+        try {
+            $this->ensureCollection();
+            $this->upsert($this->documentsFor($models));
+        } catch (\Throwable $e) {
+            // The collection may have gone since it was last confirmed; check
+            // again on the next save rather than trusting the cache.
+            $this->cache->forget($this->existsKey());
+            $this->typesense->unreachable(static::index().' indexing', $e);
+        }
     }
 
     public function delete(array $models): void
@@ -72,7 +83,7 @@ abstract class AbstractIndexer implements IndexerInterface
                 'filter_by' => 'id:['.implode(',', $ids).']',
             ]);
         } catch (\Throwable $e) {
-            $this->log->warning('[typesense] '.static::index().' delete failed: '.$e->getMessage());
+            $this->typesense->unreachable(static::index().' delete', $e);
         }
     }
 
@@ -112,17 +123,20 @@ abstract class AbstractIndexer implements IndexerInterface
      */
     protected function import(array $docs): void
     {
-        if (empty($docs)) {
-            return;
-        }
-
         try {
-            $this->collection()->documents->import($docs, ['action' => 'upsert']);
+            $this->upsert($docs);
         } catch (\Throwable $e) {
-            // The collection may have gone since it was last confirmed; check
-            // again on the next save rather than trusting the cache.
-            $this->cache->forget($this->existsKey());
             $this->log->warning('[typesense] '.static::index().' upsert failed: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * @param array<array<string, mixed>> $docs
+     */
+    protected function upsert(array $docs): void
+    {
+        if (! empty($docs)) {
+            $this->collection()->documents->import($docs, ['action' => 'upsert']);
         }
     }
 
@@ -147,7 +161,7 @@ abstract class AbstractIndexer implements IndexerInterface
         try {
             $this->collection()->retrieve();
             $this->cache->put($this->existsKey(), true, self::EXISTS_TTL);
-        } catch (\Throwable $e) {
+        } catch (ObjectNotFound) {
             $this->createCollection();
         }
     }

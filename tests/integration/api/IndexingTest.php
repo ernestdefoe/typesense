@@ -43,6 +43,22 @@ class IndexingTest extends TypesenseTestCase
     }
 
     #[Test]
+    public function an_unreachable_server_never_blocks_a_post()
+    {
+        $this->unreachable();
+
+        [$status, $body] = $this->startDiscussion();
+        $this->assertSame(201, $status, json_encode($body));
+
+        [$status, $body] = $this->call('POST', '/api/posts', 1, ['data' => [
+            'type' => 'posts',
+            'attributes' => ['content' => 'A reply while the index is away'],
+            'relationships' => ['discussion' => ['data' => ['type' => 'discussions', 'id' => $body['data']['id']]]],
+        ]]);
+        $this->assertSame(201, $status, json_encode($body));
+    }
+
+    #[Test]
     public function posting_works_before_typesense_is_configured()
     {
         $this->assertSame(201, $this->startDiscussion()[0]);
