@@ -5,8 +5,6 @@ namespace Ernestdefoe\Typesense\Tests\integration;
 use Ernestdefoe\Typesense\Tests\fixtures\FakeConnection;
 use Ernestdefoe\Typesense\Tests\fixtures\FakeTypesense;
 use Ernestdefoe\Typesense\TypesenseConnection;
-use Flarum\Foundation\Config;
-use Flarum\Settings\SettingsRepositoryInterface;
 use Flarum\Testing\integration\RetrievesAuthorizedUsers;
 use Flarum\Testing\integration\TestCase;
 use Flarum\User\User;
@@ -16,6 +14,9 @@ abstract class TypesenseTestCase extends TestCase
     use RetrievesAuthorizedUsers;
 
     protected FakeTypesense $typesense;
+
+    /** False to talk to the real HTTP client instead of the fake server. */
+    protected bool $fake = true;
 
     protected function setUp(): void
     {
@@ -35,16 +36,23 @@ abstract class TypesenseTestCase extends TestCase
         $this->setting('ernestdefoe-typesense.host', 'typesense.test');
     }
 
+    /** Connection details entered for a server that refuses every connection. */
+    protected function unreachable(): void
+    {
+        $this->fake = false;
+        $this->setting('ernestdefoe-typesense.api_key', 'test-key');
+        $this->setting('ernestdefoe-typesense.host', '127.0.0.1');
+        $this->setting('ernestdefoe-typesense.port', '1');
+    }
+
     /** Boot the forum with the fake server behind the real connection class. */
     protected function boot(): void
     {
         $container = $this->app()->getContainer();
 
-        $container->instance(TypesenseConnection::class, new FakeConnection(
-            $container->make(SettingsRepositoryInterface::class),
-            $container->make(Config::class),
-            $this->typesense
-        ));
+        if ($this->fake) {
+            $container->instance(TypesenseConnection::class, $container->make(FakeConnection::class, ['fakeServer' => $this->typesense]));
+        }
     }
 
     /** @return array{0: int, 1: mixed} */

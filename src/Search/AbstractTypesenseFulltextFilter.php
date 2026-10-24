@@ -6,25 +6,32 @@ use Ernestdefoe\Typesense\TypesenseConnection;
 use Flarum\Search\AbstractFulltextFilter;
 use Flarum\Search\Database\DatabaseSearchState;
 use Flarum\Search\SearchState;
-use Psr\Log\LoggerInterface;
 
 /**
  * Executes the fulltext part of a search against Typesense: asks for matching
  * IDs (ranked), constrains the Eloquent query to those IDs, and sets relevance
  * as the default sort. Permissions never depend on this — the searcher's
  * getQuery() has already applied whereVisibleTo — so Typesense only narrows and
- * orders candidates. On any error the search degrades to "no matches" instead
- * of throwing, so a search box never 500s because the search server blipped.
+ * orders candidates. When Typesense is not configured or does not answer, the
+ * search falls back to core's database fulltext filter for that request, so a
+ * search server outage means slower results, never none.
  */
 abstract class AbstractTypesenseFulltextFilter extends AbstractFulltextFilter
 {
     public function __construct(
-        protected TypesenseConnection $typesense,
-        protected LoggerInterface $log
+        protected TypesenseConnection $typesense
     ) {
     }
 
     abstract protected function index(): string;
+
+    /**
+     * Core's database fulltext filter for this resource, used when Typesense
+     * cannot answer.
+     *
+     * @return class-string<AbstractFulltextFilter>
+     */
+    abstract protected function databaseFilter(): string;
 
     abstract protected function queryBy(): string;
 
@@ -41,6 +48,12 @@ abstract class AbstractTypesenseFulltextFilter extends AbstractFulltextFilter
         $query = $state->getQuery();
 
         $ids = $this->matchingIds($value);
+
+        if ($ids === null) {
+            resolve($this->databaseFilter())->search($state, $value);
+
+            return;
+        }
 
         if (empty($ids)) {
             $query->whereRaw('0 = 1');
@@ -65,12 +78,12 @@ abstract class AbstractTypesenseFulltextFilter extends AbstractFulltextFilter
     }
 
     /**
-     * @return int[] IDs in relevance order (empty on miss/error)
+     * @return int[]|null IDs in relevance order, or null when Typesense could not be asked
      */
-    protected function matchingIds(string $value): array
+    protected function matchingIds(string $value): ?array
     {
         if (! $this->typesense->configured()) {
-            return [];
+            return null;
         }
 
         try {
@@ -95,9 +108,9 @@ abstract class AbstractTypesenseFulltextFilter extends AbstractFulltextFilter
                 $response['hits'] ?? []
             )));
         } catch (\Throwable $e) {
-            $this->log->error('[typesense] '.$this->index().' search failed: '.$e->getMessage());
+            $this->typesense->unreachable($this->index().' search', $e);
 
-            return [];
+            return null;
         }
     }
 }

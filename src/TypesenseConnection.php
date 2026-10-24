@@ -4,6 +4,9 @@ namespace Ernestdefoe\Typesense;
 
 use Flarum\Foundation\Config;
 use Flarum\Settings\SettingsRepositoryInterface;
+use Illuminate\Contracts\Cache\Repository as Cache;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\HttpClient\HttplugClient;
 use Typesense\Client;
 
@@ -18,11 +21,18 @@ use Typesense\Client;
  */
 class TypesenseConnection
 {
+    /**
+     * How long one outage is reported as one log line.
+     */
+    protected const DOWN_TTL = 60;
+
     private ?Client $client = null;
 
     public function __construct(
         protected SettingsRepositoryInterface $settings,
-        protected Config $config
+        protected Config $config,
+        protected Cache $cache,
+        protected LoggerInterface $log
     ) {
     }
 
@@ -84,6 +94,11 @@ class TypesenseConnection
             return $this->client;
         }
 
+        // 🚨 The SDK has no timeout of its own (its old `connection_timeout_seconds`
+        // is ignored), so the HTTP client carries it. Without one, a server
+        // that stopped answering held every search for PHP's 60 s socket
+        // timeout. A visitor's request waits at most 2 s; the CLI (rebuilds,
+        // queue workers) gives a big import time to be processed.
         return $this->client = new Client([
             'api_key' => $this->apiKey(),
             'nodes' => [[
@@ -91,9 +106,24 @@ class TypesenseConnection
                 'port' => $this->port(),
                 'protocol' => $this->protocol(),
             ]],
-            'connection_timeout_seconds' => 2,
-            'client' => new HttplugClient(),
+            'num_retries' => 0,
+            'client' => new HttplugClient(HttpClient::create([
+                'timeout' => PHP_SAPI === 'cli' ? 30 : 2,
+            ])),
         ]);
+    }
+
+    /**
+     * Logs a failed call to Typesense once per outage, not once per request:
+     * the first failure sets a short-lived flag and later ones stay quiet
+     * until it expires. Only reached on failure, so it costs nothing while
+     * the server is up.
+     */
+    public function unreachable(string $what, \Throwable $e): void
+    {
+        if ($this->cache->add('ernestdefoe-typesense.down', true, self::DOWN_TTL)) {
+            $this->log->warning("[typesense] $what failed: {$e->getMessage()}. Until Typesense answers, searches use the database and changes are not indexed; `php flarum typesense:index` catches the index up.");
+        }
     }
 
     /**

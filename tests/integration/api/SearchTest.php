@@ -80,12 +80,34 @@ class SearchTest extends TypesenseTestCase
     }
 
     #[Test]
-    public function a_server_that_is_down_means_no_results_not_an_error()
+    public function a_server_that_is_down_falls_back_to_the_database_search()
     {
         $this->configured();
         $this->useTypesenseFor(Discussion::class);
         $this->typesense->down = true;
 
-        $this->assertSame([], $this->search('discussion'));
+        $this->assertEqualsCanonicalizing([1, 3], $this->search('discussion'), 'The database matches, still not the hidden 2');
+    }
+
+    #[Test]
+    public function an_unreachable_server_falls_back_to_the_database_search()
+    {
+        $this->unreachable();
+        $this->useTypesenseFor(Discussion::class);
+        $this->prepareDatabase([
+            Discussion::class => [['id' => 4, 'title' => 'Zebra crossings', 'created_at' => Carbon::now(), 'user_id' => 2, 'first_post_id' => 4, 'comment_count' => 1]],
+            Post::class => [['id' => 4, 'discussion_id' => 4, 'number' => 1, 'created_at' => Carbon::now(), 'user_id' => 2, 'type' => 'comment', 'content' => '<t><p>Stripes</p></t>']],
+        ]);
+
+        $this->assertSame([4], $this->search('zebra'));
+    }
+
+    #[Test]
+    public function search_falls_back_to_the_database_before_typesense_is_configured()
+    {
+        $this->useTypesenseFor(Discussion::class);
+
+        $this->assertEqualsCanonicalizing([1, 3], $this->search('discussion'));
+        $this->assertSame([], $this->typesense->requests);
     }
 }
