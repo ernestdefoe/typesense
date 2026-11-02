@@ -7,6 +7,7 @@ use Flarum\Search\IndexerInterface;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Database\Eloquent\Builder;
 use Psr\Log\LoggerInterface;
+use Typesense\Exceptions\ObjectAlreadyExists;
 use Typesense\Exceptions\ObjectNotFound;
 
 /**
@@ -113,8 +114,13 @@ abstract class AbstractIndexer implements IndexerInterface
 
         try {
             $this->collection()->delete();
-        } catch (\Throwable $e) {
+        } catch (ObjectNotFound) {
             // Collection didn't exist — nothing to flush.
+        } catch (\Throwable $e) {
+            // 🚨 Only "not found" is quiet: a wrong API key or a server that is
+            // down used to pass silently here, and a rebuild looked fine while
+            // the index was never touched.
+            $this->typesense->unreachable(static::index().' flush', $e);
         }
     }
 
@@ -178,8 +184,12 @@ abstract class AbstractIndexer implements IndexerInterface
                 ['name' => $this->typesense->collectionName(static::index())],
                 $this->schema()
             ));
+        } catch (ObjectAlreadyExists) {
+            // Created meanwhile by another request — nothing to do.
         } catch (\Throwable $e) {
-            // Already exists (race) or create failed — surfaced on next op.
+            // A rejected schema, a wrong API key or a server that is down is
+            // logged (once per outage), not swallowed.
+            $this->typesense->unreachable(static::index().' create', $e);
         }
     }
 }

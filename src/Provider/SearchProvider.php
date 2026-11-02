@@ -41,6 +41,11 @@ class SearchProvider extends AbstractServiceProvider
     /**
      * In boot(), not register(): extensions that load after this one add their
      * filters later, and a mirror taken at register time missed them.
+     *
+     * These two bindings are the ones core's own Extend\SearchDriver writes
+     * (addFilter/addMutator extend exactly these keys). The extender can only
+     * add classes it is told about up front; it cannot copy the filters that
+     * other extensions register on core's searchers, which is what this does.
      */
     public function boot(): void
     {

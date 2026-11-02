@@ -22,6 +22,9 @@ class FakeTypesense implements ClientInterface
     /** Answer every call with a 503, as a server that is down would. */
     public bool $down = false;
 
+    /** @var array<string, int> "METHOD path-regex" => status to answer with instead */
+    public array $statuses = [];
+
     public function sendRequest(RequestInterface $request): ResponseInterface
     {
         parse_str($request->getUri()->getQuery(), $query);
@@ -38,6 +41,13 @@ class FakeTypesense implements ClientInterface
         }
 
         $path = $request->getUri()->getPath();
+
+        foreach ($this->statuses as $match => $status) {
+            [$method, $pattern] = explode(' ', $match, 2);
+            if ($method === $request->getMethod() && preg_match($pattern, $path)) {
+                return $this->json($status, ['message' => 'Fake '.$status]);
+            }
+        }
 
         if ($path === '/health') {
             return $this->json(200, ['ok' => true]);
